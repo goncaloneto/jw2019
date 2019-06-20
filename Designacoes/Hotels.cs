@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Designacoes
 {
-    public class Hotels
+    public class Hotel
     {
         public int CA_BaíaCascais100 { get; set; }
         public int CA_PCidadelaCscais57 { get; set; }

@@ -22,6 +22,9 @@ namespace Designacoes
 
         public string Obs => String.IsNullOrEmpty(Observations) ? " " : Observations;
 
+        public string StartTimeTime => StartTime.ToString("hh:mm").Replace(":", "h");
+        public string StartTimeDate => StartTime.ToString("dd/MM/yyyy");
+
         public override bool Equals(Object obj)
         {
             //Check for null and compare run-time types.
