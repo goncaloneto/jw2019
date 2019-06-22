@@ -37,6 +37,8 @@ class Program
         var trips = new ExcelMapper("bustrips.xlsx").Fetch<BusTrip>();
         var slots = new ExcelMapper("Assignments.xlsx").Fetch<Slot>();
         var volunteers = new ExcelMapper("TLBC.xlsx").Fetch<Volunteer>();
+        var busIds = new ExcelMapper("BUSID.xlsx").Fetch<BusID>();
+        
 
         trips = trips.Where(x => !x.SlotName.ToUpper().Contains("CONV".ToUpper()));
 
@@ -123,6 +125,8 @@ class Program
 
                 program.FindAndReplace("{LOCATION}", program.GetAddressByCode(puls.ToList(), x.Location));
                 program.FindAndReplace("{SLOTNAME}", x.SlotName);
+                var busid = busIds.FirstOrDefault(y => y.SlotName.Equals(x.SlotName));
+                program.FindAndReplace("{BUSID}", busid == null ? "N/A" : busid.BUSID);
                 program.FindAndReplace("{ACTIVITYNAME}", x.ActivityName);
                 program.FindAndReplace("{LEAVETIME}", x.StartTime.ToString("dd/MM/yyyy hh:mm"));
                 program.FindAndReplace("{DELEGATES}", x.Delegates);
