@@ -27,7 +27,7 @@ class Program
     List<PUL> PULs;
     List<BusTrip> Trips;
     List<Assignment> Assignments;
-    List<Assignment> TLs;
+    List<Assignment> DOCs;
     List<Volunteer> Volunteers;
     List<Delegate> Delegates;
 
@@ -66,16 +66,92 @@ class Program
         Volunteers = new ExcelMapper("Volunteers.xlsx").Fetch<Volunteer>().ToList();
         Delegates = new ExcelMapper("Delegates.xlsx").Fetch<Delegate>().ToList();
 
-        TLs = Assignments.Where(x => x.Usage.Equals("AT_TL")).ToList();
+        DOCs = Assignments.Where(x => x.Usage.Equals("AT_Drop")).ToList();
         var slotsDone = new List<string>();
+        var activitiesDone = new List<string>();
+        var datesDone = new List<string>(); 
 
-        for (int i = 0; i < TLs.Count; i++)
+        // for each trip // LOOP
+        foreach (BusTrip trip in Trips)
+        {
+            if (activitiesDone.Contains(trip.ActivityName))
+            {
+                continue;
+            }
+
+            // Filter by trip's activity
+            var tripsOfActivity = Trips.Where(x => x.ActivityName.Equals(trip.ActivityName));
+
+            // LOOP
+            foreach (BusTrip tripOfActivity in tripsOfActivity)
+            {
+                if (datesDone.Contains(tripOfActivity.StartTimeDate))
+                {
+                    continue;
+                }
+
+                // filter by date
+                var datesOfActivity = tripsOfActivity.Where(x => x.StartTimeDate.Equals(tripOfActivity.StartTimeDate));
+
+                // for each date // LOOP
+                foreach (BusTrip day in datesOfActivity)
+                {
+                    /////////////////////////////////// CHANGE?? //////////////////////////////////////
+
+                    // filter by slot 
+                    var slotsOfDay = datesOfActivity.Where(x => x.SlotName.Equals(day.SlotName));
+
+                    // for each slot // LOOP
+                    foreach(BusTrip slot in slotsOfDay)
+                    {
+                        if (slotsDone.Contains(day.SlotName))
+                        {
+                            continue;
+                        }
+
+                        // DO STUFF
+
+                        // Update slots done
+                        slotsDone.Add(day.SlotName);
+                        
+                        // END LOOP 
+                    }
+                }
+
+                // update list of done dates
+                datesDone.Add(tripOfActivity.StartTimeDate);
+
+                slotsDone.Clear();
+
+                // END LOOP 
+            }
+            // Update list of activities done
+            activitiesDone.Add(trip.ActivityName);
+
+            datesDone.Clear();
+
+            // END LOOP
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+        /////////////////////////////////////////////////////
+        for (int i = 0; i < DOCs.Count; i++)
         {
             OpenDocument("input.docx");
             ActivateDocument();
 
             // Do it by slot 
-            var currentSlot = TLs[i].SlotName;
+            var currentSlot = DOCs[i].SlotName;
             // If slot is already done
             if (slotsDone.Contains(currentSlot))
             {
@@ -83,7 +159,7 @@ class Program
             }
 
             // List of assignments for the current slot
-            var assignmentsOfSlot = TLs.Where(x => x.SlotName.Equals(currentSlot)).ToList();
+            var assignmentsOfSlot = DOCs.Where(x => x.SlotName.Equals(currentSlot)).ToList();
             // Sort the list by start time
             assignmentsOfSlot.Sort(new StartComparer());
 
