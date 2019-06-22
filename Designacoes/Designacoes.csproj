@@ -69,6 +69,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BusID.cs" />
     <Compile Include="BusTrip.cs" />
     <Compile Include="Delegates.cs" />
     <Compile Include="Hotels.cs" />
@@ -81,6 +82,9 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="Assignments.xlsx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="BUSID.xlsx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="bustrips.xlsx">

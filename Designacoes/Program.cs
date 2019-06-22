@@ -30,6 +30,7 @@ class Program
     List<Assignment> TLs;
     List<Volunteer> Volunteers;
     List<Delegate> Delegates;
+    List<BusID> BusIDs;
 
     Workbook Workbook;
     _Worksheet Worksheet;
@@ -65,6 +66,7 @@ class Program
         Assignments = new ExcelMapper("Assignments.xlsx").Fetch<Assignment>().ToList();
         Volunteers = new ExcelMapper("Volunteers.xlsx").Fetch<Volunteer>().ToList();
         Delegates = new ExcelMapper("Delegates.xlsx").Fetch<Delegate>().ToList();
+        BusIDs = new ExcelMapper("BUSID.xlsx").Fetch<BusID>().ToList();
 
         TLs = Assignments.Where(x => x.Usage.Equals("AT_TL")).ToList();
         var slotsDone = new List<string>();
@@ -90,10 +92,13 @@ class Program
             var activityName = Trips.First(x => x.SlotName.Equals(currentSlot)).ActivityName;
             var tlName = $"{ToTitleCase(assignmentsOfSlot.First().VolunteerName)} {ToTitleCase(assignmentsOfSlot.First().VolunteerSurname)}";
 
+            var b = BusIDs.FirstOrDefault(x => x.Equals(currentSlot));
+            var busid = b == null ? "N/A" : b.BUSID;
+
             //Header
             HeaderFindAndReplace("{ACTIVITYNAME}", activityName);
             HeaderFindAndReplace("{DATE}", assignmentsOfSlot.First().StartDate);
-            HeaderFindAndReplace("{BUSID}", "?????");
+            HeaderFindAndReplace("{BUSID}", busid);
             HeaderFindAndReplace("{PUL}", GetNameByCode(assignmentsOfSlot.First().Location));
             HeaderFindAndReplace("{TIME}", assignmentsOfSlot.First().StartTime);
             HeaderFindAndReplace("{ADDRESS}", GetAddressByCode(assignmentsOfSlot.First().Location));
@@ -106,7 +111,7 @@ class Program
             FindAndReplace("{TOURLEADER}", tlName);
             FindAndReplace("{ACTIVITYNAME}", activityName);
             FindAndReplace("{SLOTNAME}", currentSlot);
-            FindAndReplace("{BUSID}", "?????");
+            FindAndReplace("{BUSID}", busid);
 
 
             // Fill PULs
