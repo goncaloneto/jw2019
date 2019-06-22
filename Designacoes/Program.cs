@@ -89,10 +89,15 @@ class Program
             // Sort the list by start time
             assignmentsOfSlot.Sort(new StartComparer());
 
-            var activityName = Trips.First(x => x.SlotName.Equals(currentSlot)).ActivityName;
+            var a = Trips.FirstOrDefault(x => x.SlotName.Equals(currentSlot));
+
+            if (a == null)
+                continue;
+
+            var activityName = a.ActivityName;
             var tlName = $"{ToTitleCase(assignmentsOfSlot.First().VolunteerName)} {ToTitleCase(assignmentsOfSlot.First().VolunteerSurname)}";
 
-            var b = BusIDs.FirstOrDefault(x => x.Equals(currentSlot));
+            var b = BusIDs.FirstOrDefault(x => x.SlotName.Equals(currentSlot));
             var busid = b == null ? "N/A" : b.BUSID;
 
             //Header
@@ -167,7 +172,9 @@ class Program
             }
             FindAndReplace("{DELEGATESLIST}", "");
 
-            SaveAs($"{activityName.Replace(" ", "")}_{assignmentsOfSlot.First().StartDate.Replace("/", "")}");
+            slotsDone.Add(currentSlot);
+
+            SaveAs($"{tlName.Replace(" ", "")}_{currentSlot}");
             //SaveAsPDF($"{currentLocation}");
             CloseDocument();
         }
