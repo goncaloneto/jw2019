@@ -30,6 +30,7 @@ class Program
     List<Assignment> DOCs;
     List<Volunteer> Volunteers;
     List<Delegate> Delegates;
+    List<BusID> BusIDs;
 
     Workbook Workbook;
     _Worksheet Worksheet;
@@ -65,6 +66,7 @@ class Program
         Assignments = new ExcelMapper("Assignments.xlsx").Fetch<Assignment>().ToList();
         Volunteers = new ExcelMapper("Volunteers.xlsx").Fetch<Volunteer>().ToList();
         Delegates = new ExcelMapper("Delegates.xlsx").Fetch<Delegate>().ToList();
+        BusIDs = new ExcelMapper("BUSID.xlsx").Fetch<BusID>().ToList();
 
         DOCs = Assignments.Where(x => x.Usage.Equals("AT_Drop")).ToList();
         var slotsDone = new List<string>();
@@ -82,7 +84,6 @@ class Program
             // Filter by trip's activity
             var tripsOfActivity = Trips.Where(x => x.ActivityName.Equals(trip.ActivityName));
 
-            // LOOP
             foreach (BusTrip tripOfActivity in tripsOfActivity)
             {
                 if (datesDone.Contains(tripOfActivity.StartTimeDate))
@@ -90,47 +91,54 @@ class Program
                     continue;
                 }
 
-                // filter by date
                 var datesOfActivity = tripsOfActivity.Where(x => x.StartTimeDate.Equals(tripOfActivity.StartTimeDate));
 
-                // for each date // LOOP
                 foreach (BusTrip day in datesOfActivity)
                 {
-                    /////////////////////////////////// CHANGE?? //////////////////////////////////////
-
-                    // filter by slot 
-                    var slotsOfDay = datesOfActivity.Where(x => x.SlotName.Equals(day.SlotName));
-
-                    // for each slot // LOOP
-                    foreach(BusTrip slot in slotsOfDay)
+                    if (slotsDone.Contains(day.SlotName))
                     {
-                        if (slotsDone.Contains(day.SlotName))
-                        {
-                            continue;
-                        }
-
-                        // DO STUFF
-
-                        // Update slots done
-                        slotsDone.Add(day.SlotName);
-                        
-                        // END LOOP 
+                        continue;
                     }
+
+                    var slotsOfDay = datesOfActivity.Where(x => x.SlotName.Equals(day.SlotName)).ToList();
+                    slotsOfDay.Sort(new StartTimeComparer());
+                    foreach (BusTrip slot in slotsOfDay)
+                    {
+                        OpenDocument("input.docx");
+                        ActivateDocument();
+
+                        CopyTable();
+
+                        HeaderFindAndReplace("{ACTIVITYNAME}", slot.ActivityName);
+                        HeaderFindAndReplace("{DATE}", slot.StartTimeDate);
+                        HeaderFindAndReplace("{SLOTNAME}", slot.SlotName);
+
+                        int countDelegates = 0;
+                        slotsOfDay.ToList().ForEach(x => countDelegates += x.Delegates);
+                        FindAndReplace("{DELEGATES}", countDelegates);
+                        FindAndReplace("{LASTPUL}", slotsOfDay.Last().Location);
+                        FindAndReplace("{LASTPULTIME}", slotsOfDay.Last().StartTimeTime);
+
+                        var b = BusIDs.FirstOrDefault(x => x.SlotName.Equals(slot.SlotName));
+                        var busid = b == null ? "N/A" : b.BUSID;
+                        FindAndReplace("{BUSID}", busid);
+
+
+
+                        PasteTable();
+                    }
+
+                    slotsDone.Add(day.SlotName);
                 }
 
-                // update list of done dates
                 datesDone.Add(tripOfActivity.StartTimeDate);
 
                 slotsDone.Clear();
-
-                // END LOOP 
             }
-            // Update list of activities done
+
             activitiesDone.Add(trip.ActivityName);
 
             datesDone.Clear();
-
-            // END LOOP
         }
 
 
