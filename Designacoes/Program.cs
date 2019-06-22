@@ -123,7 +123,17 @@ class Program
                         var busid = b == null ? "N/A" : b.BUSID;
                         FindAndReplace("{BUSID}", busid);
 
+                        var tl = Assignments.FirstOrDefault(x => x.SlotName.Equals(slot.SlotName) && x.Usage.Equals("AT_TL"));
+                        var name = tl == null ? "N/A" : $"{tl.VolunteerName} {tl.VolunteerSurname}";
+                        var mobile = tl == null ? "N/A" : Volunteers.FirstOrDefault(x=>x.Email.Equals(tl.Email)).Mobile;
+                        FindAndReplace("{TOURLEADER}", $"{name} ({mobile})");
 
+                        var bc = Assignments.FirstOrDefault(x => x.SlotName.Equals(slot.SlotName) && x.Usage.Equals("TR_BC"));
+                        name = bc == null ? "N/A" : $"{bc.VolunteerName} {bc.VolunteerSurname}";
+                        mobile = bc == null ? "N/A" : Volunteers.FirstOrDefault(x => x.Email.Equals(bc.Email)).Mobile;
+                        FindAndReplace("{BUSCAPTAIN}", $"{name} ({mobile})");
+
+                        
 
                         PasteTable();
                     }
