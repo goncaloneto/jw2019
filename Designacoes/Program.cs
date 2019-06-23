@@ -71,7 +71,7 @@ class Program
         DOCs = Assignments.Where(x => x.Usage.Equals("AT_Drop")).ToList();
         var slotsDone = new List<string>();
         var activitiesDone = new List<string>();
-        var datesDone = new List<string>(); 
+        var datesDone = new List<string>();
 
         // for each trip // LOOP
         foreach (BusTrip trip in Trips)
@@ -91,6 +91,11 @@ class Program
                     continue;
                 }
 
+                OpenDocument("input.docx");
+                ActivateDocument();
+
+                CopyTable();
+
                 var datesOfActivity = tripsOfActivity.Where(x => x.StartTimeDate.Equals(tripOfActivity.StartTimeDate));
 
                 foreach (BusTrip day in datesOfActivity)
@@ -102,44 +107,59 @@ class Program
 
                     var slotsOfDay = datesOfActivity.Where(x => x.SlotName.Equals(day.SlotName)).ToList();
                     slotsOfDay.Sort(new StartTimeComparer());
-                    foreach (BusTrip slot in slotsOfDay)
-                    {
-                        OpenDocument("input.docx");
-                        ActivateDocument();
 
-                        CopyTable();
-
-                        HeaderFindAndReplace("{ACTIVITYNAME}", slot.ActivityName);
-                        HeaderFindAndReplace("{DATE}", slot.StartTimeDate);
-                        HeaderFindAndReplace("{SLOTNAME}", slot.SlotName);
-
-                        int countDelegates = 0;
-                        slotsOfDay.ToList().ForEach(x => countDelegates += x.Delegates);
-                        FindAndReplace("{DELEGATES}", countDelegates);
-                        FindAndReplace("{LASTPUL}", slotsOfDay.Last().Location);
-                        FindAndReplace("{LASTPULTIME}", slotsOfDay.Last().StartTimeTime);
-
-                        var b = BusIDs.FirstOrDefault(x => x.SlotName.Equals(slot.SlotName));
-                        var busid = b == null ? "N/A" : b.BUSID;
-                        FindAndReplace("{BUSID}", busid);
-
-                        var tl = Assignments.FirstOrDefault(x => x.SlotName.Equals(slot.SlotName) && x.Usage.Equals("AT_TL"));
-                        var name = tl == null ? "N/A" : $"{tl.VolunteerName} {tl.VolunteerSurname}";
-                        var mobile = tl == null ? "N/A" : Volunteers.FirstOrDefault(x=>x.Email.Equals(tl.Email)).Mobile;
-                        FindAndReplace("{TOURLEADER}", $"{name} ({mobile})");
-
-                        var bc = Assignments.FirstOrDefault(x => x.SlotName.Equals(slot.SlotName) && x.Usage.Equals("TR_BC"));
-                        name = bc == null ? "N/A" : $"{bc.VolunteerName} {bc.VolunteerSurname}";
-                        mobile = bc == null ? "N/A" : Volunteers.FirstOrDefault(x => x.Email.Equals(bc.Email)).Mobile;
-                        FindAndReplace("{BUSCAPTAIN}", $"{name} ({mobile})");
-
-                        
-
+                    if (slotsDone.Any())
                         PasteTable();
-                    }
+
+
+                    HeaderFindAndReplace("{ACTIVITYNAME}", day.ActivityName);
+                    HeaderFindAndReplace("{DATE}", day.StartTimeDate);
+                    FooterFindAndReplace("{ACTIVITYNAME}", day.ActivityName);
+                    FooterFindAndReplace("{DATE}", day.StartTimeDate);
+
+                    FindAndReplace("{SLOTNAME}", day.SlotName);
+
+                    int countDelegates = 0;
+                    slotsOfDay.ToList().ForEach(x => countDelegates += x.Delegates);
+                    FindAndReplace("{DELEGATES}", countDelegates);
+                    FindAndReplace("{LASTPUL}", slotsOfDay.Last().Location);
+                    FindAndReplace("{LASTPULTIME}", slotsOfDay.Last().StartTimeTime);
+
+                    var b = BusIDs.FirstOrDefault(x => x.SlotName.Equals(day.SlotName));
+                    var busid = b == null ? "N/A" : b.BUSID;
+                    FindAndReplace("{BUSID}", busid);
+
+                    var tl = Assignments.FirstOrDefault(x => x.SlotName.Equals(day.SlotName) && x.Usage.Equals("AT_TL"));
+                    var name = tl == null ? "N/A" : $"{tl.VolunteerName} {tl.VolunteerSurname}";
+                    var mobile = tl == null ? "N/A" : Volunteers.FirstOrDefault(x => x.Email.Equals(tl.Email)).Mobile;
+                    FindAndReplace("{TOURLEADER}", $"{name} ({mobile})");
+
+                    var bc = Assignments.FirstOrDefault(x => x.SlotName.Equals(day.SlotName) && x.Usage.Equals("TR_BC"));
+                    name = bc == null ? "N/A" : $"{bc.VolunteerName} {bc.VolunteerSurname}";
+                    mobile = bc == null ? "N/A" : Volunteers.FirstOrDefault(x => x.Email.Equals(bc.Email)).Mobile;
+                    FindAndReplace("{BUSCAPTAIN}", $"{name} ({mobile})");
+
+
+                    // Delegates per slot
+                    var delegatesOnSlot = Delegates.Where(x => x.SlotName.Equals(day.SlotName)).ToList();
+                    // Sort by hotel
+                    delegatesOnSlot.Sort(new HotelComparer());
+
+                    // Add list of delegates to word
+                    string replace = String.Empty;
+                    delegatesOnSlot.ForEach(x =>
+                    {
+                        replace = $"{GetNameByCode(x.Hotel)} - {x.Name} {x.Surname}\v{{DELEGATESLIST}}";
+                        FindAndReplace("{DELEGATESLIST}", replace);
+                    });
+                    FindAndReplace("{DELEGATESLIST}", "");
 
                     slotsDone.Add(day.SlotName);
                 }
+
+                SaveAs($"{Guid.NewGuid()}");
+                //SaveAsPDF($"{currentLocation}");
+                CloseDocument();
 
                 datesDone.Add(tripOfActivity.StartTimeDate);
 
@@ -150,117 +170,6 @@ class Program
 
             datesDone.Clear();
         }
-
-
-
-
-
-
-
-
-
-
-
-
-        /////////////////////////////////////////////////////
-        for (int i = 0; i < DOCs.Count; i++)
-        {
-            OpenDocument("input.docx");
-            ActivateDocument();
-
-            // Do it by slot 
-            var currentSlot = DOCs[i].SlotName;
-            // If slot is already done
-            if (slotsDone.Contains(currentSlot))
-            {
-                continue;
-            }
-
-            // List of assignments for the current slot
-            var assignmentsOfSlot = DOCs.Where(x => x.SlotName.Equals(currentSlot)).ToList();
-            // Sort the list by start time
-            assignmentsOfSlot.Sort(new StartComparer());
-
-            var activityName = Trips.First(x => x.SlotName.Equals(currentSlot)).ActivityName;
-            var tlName = $"{ToTitleCase(assignmentsOfSlot.First().VolunteerName)} {ToTitleCase(assignmentsOfSlot.First().VolunteerSurname)}";
-
-            //Header
-            HeaderFindAndReplace("{ACTIVITYNAME}", activityName);
-            HeaderFindAndReplace("{DATE}", assignmentsOfSlot.First().StartDate);
-            HeaderFindAndReplace("{BUSID}", "?????");
-            HeaderFindAndReplace("{PUL}", GetNameByCode(assignmentsOfSlot.First().Location));
-            HeaderFindAndReplace("{TIME}", assignmentsOfSlot.First().StartTime);
-            HeaderFindAndReplace("{ADDRESS}", GetAddressByCode(assignmentsOfSlot.First().Location));
-
-            //Footer
-            FooterFindAndReplace("{ACTIVITYNAME}", activityName);
-            FooterFindAndReplace("{DATE}", assignmentsOfSlot.First().StartDate);
-
-            //First Table
-            FindAndReplace("{TOURLEADER}", tlName);
-            FindAndReplace("{ACTIVITYNAME}", activityName);
-            FindAndReplace("{SLOTNAME}", currentSlot);
-            FindAndReplace("{BUSID}", "?????");
-
-
-            // Fill PULs
-            var trips = Trips.Where(x => x.SlotName.Equals(currentSlot)).ToList();
-            trips.Sort(new StartTimeComparer());
-
-            foreach (BusTrip trip in trips)
-            {
-                // Duplicate row
-                WordApplication.Selection.Collapse();
-                WordApplication.Selection.Find.Execute("{LOCATION}");
-                WordApplication.Selection.Rows[1].Range.Copy();
-                WordApplication.Selection.Rows[1].Select();
-                WordApplication.Selection.Range.Paste();
-                WordApplication.Selection.Collapse();
-
-                // ORDER MATTERS when replacing just one string
-                FindAndReplace("{LOCATION}", $"[PUL] {trip.Location}", WdReplace.wdReplaceOne);
-                FindAndReplace("{ARRIVAL}", "-", WdReplace.wdReplaceOne);
-                FindAndReplace("{DEPARTURE}", trip.StartTimeTime, WdReplace.wdReplaceOne);
-                FindAndReplace("{NDEL}", trip.Delegates, WdReplace.wdReplaceOne);
-
-                var ppcs = Assignments.Where(x => x.Location.Equals(trip.Location) && x.StartDate.Equals(trip.StartTimeDate) && x.Usage.Equals("AT_Pick"));
-                Console.WriteLine($"AT_Pick Counts: {ppcs.Count()}");
-                var ppc = ppcs.FirstOrDefault();
-                string name = ppc == null ? "N/A" : $"{ToTitleCase(ppc.VolunteerName)} {ToTitleCase(ppc.VolunteerSurname)}";
-                string mobile = ppc == null ? "N/A" : Volunteers.First(x => x.Email.Equals(ppc.Email)).Mobile;
-
-                FindAndReplace("{PPC}", name, WdReplace.wdReplaceOne);
-                FindAndReplace("{PPCMOBILE}", mobile, WdReplace.wdReplaceOne);
-            }
-
-            FindAndReplace("{BUSCAPTAIN}", GetBCBySlot(currentSlot));
-
-            // Delegates per slot
-            var delegatesOnSlot = Delegates.Where(x => x.SlotName.Equals(currentSlot)).ToList();
-            // Sort by hotel
-            delegatesOnSlot.Sort(new HotelComparer());
-
-            // Add list of delegates to word
-            string replace = String.Empty;
-            delegatesOnSlot.ForEach(x =>
-            {
-                replace = $"{GetNameByCode(x.Hotel)} - {x.Name} {x.Surname}\v{{DELEGATESLIST}}";
-                FindAndReplace("{DELEGATESLIST}", replace);
-            });
-
-            // Cleanup 
-            int count = CountOccurrences("PPCMOBILE");
-            for (int j = 0; j < count; j++)
-            {
-                DeleteRowContainsExpression("{PPCMOBILE}");
-            }
-            FindAndReplace("{DELEGATESLIST}", "");
-
-            SaveAs($"{activityName.Replace(" ", "")}_{assignmentsOfSlot.First().StartDate.Replace("/", "")}");
-            //SaveAsPDF($"{currentLocation}");
-            CloseDocument();
-        }
-
 
         //    SendEmail("goncalomadeiraneto@gmail.com", "basquet7GMru", emails.ElementAt(i), "Test", GetEmailBody(), $"Test{i}.pdf");
         //    DeleteFile($"Test{i}.pdf");
