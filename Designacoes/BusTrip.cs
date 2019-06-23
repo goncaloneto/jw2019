@@ -11,6 +11,7 @@ namespace Designacoes
     {
         public string SlotName { get; set; }
         public DateTime StartTime { get; set; }
+        public String StartTimeDate => StartTime.ToString("dd/MM/yyyy");
         public DateTime ReturnTime { get; set; }
         public DateTime EndTime { get; set; }
         public int ActivityID { get; set; }

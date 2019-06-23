@@ -54,6 +54,7 @@ class Program
             int startBuses = 0;
             int midBuses = 0;
 
+
             currentLocation = busTrip.Location;
 
             // Slot may have been done before
@@ -66,7 +67,7 @@ class Program
 
             locationTrips.Sort(new StartTimeComparer());
 
-            currentDay = locationTrips.First().StartTime.ToString("dd/MM/yyyy");
+            currentDay = locationTrips.First().StartTimeDate;
 
             Console.WriteLine($"Location: {currentLocation}");
             Console.WriteLine($"Day: {currentDay}");
@@ -79,18 +80,34 @@ class Program
 
             for (int i = 0; i < locationTrips.Count; i++)
             {
-                if (!currentDay.Equals(locationTrips[i].StartTime.ToString("dd/MM/yyyy")))
+                if (!currentDay.Equals(locationTrips[i].StartTimeDate))
                 {
                     program.HeaderFindAndReplace("{TOTALWATER}", water.ToString());
                     program.HeaderFindAndReplace("{BUSCOUNT}", busIndex - 1);
                     program.HeaderFindAndReplace("{FIRSTBUSCOUNT}", startBuses);
                     program.HeaderFindAndReplace("{MIDBUSCOUNT}", midBuses);
 
-                    program.SaveAs($"{currentLocation}_{currentDay.Replace("/", "")}");
-                    //program.SaveAsPDF($"{currentLocation}");
+                    var filename1 = $"{currentLocation}_{currentDay.Replace("/", "")}";
+                    program.SaveAs(filename1);
+                    program.SaveAsPDF(filename1);
                     program.CloseDocument();
 
-                    currentDay = locationTrips[i].StartTime.ToString("dd/MM/yyyy");
+                    var emailThese1 = slots.Where(y => y.Location.Contains(currentLocation) && y.StartDate.Equals(currentDay) && y.Usage.Equals("AT_Pick")).ToList();
+
+                    if (!emailThese1.Any())
+                    {
+                        program.SendEmail("atividades.lisbon2019@gmail.com", "At@Jw2019", "goncalomadeiraneto@gmail.com", "Fail to send Assignment", $"Não foi possível encontrar assignments para a localização e dia: {currentLocation} / {currentDay}", $"{filename1}.pdf");
+                    }
+
+                    emailThese1.ForEach(y =>
+                    {
+                        program.SendEmail("atividades.lisbon2019@gmail.com", "At@Jw2019", y.Email, $"Relatório Diário de Pickup {currentDay}", program.GetEmailBody(currentDay), $"{filename1}.pdf");
+                    });
+
+                    program.DeleteFile(filename1 + ".pdf");
+                    program.DeleteFile(filename1 + ".docx");
+
+                    currentDay = locationTrips[i].StartTimeDate;
                     Console.WriteLine($"Day: {currentDay}");
                     busIndex = 1;
                     water = 0;
@@ -118,9 +135,9 @@ class Program
                 if (busIndex == 1)
                 {
                     program.HeaderFindAndReplace("{LOCATION}", program.GetNameByCode(puls.ToList(), x.Location));
-                    program.HeaderFindAndReplace("{DATE}", x.StartTime.ToString("dd/MM/yyyy"));
+                    program.HeaderFindAndReplace("{DATE}", x.StartTimeDate);
                     program.FooterFindAndReplace("{LOCATION}", program.GetNameByCode(puls.ToList(), x.Location));
-                    program.FooterFindAndReplace("{DATE}", x.StartTime.ToString("dd/MM/yyyy"));
+                    program.FooterFindAndReplace("{DATE}", x.StartTimeDate);
                 }
 
                 program.FindAndReplace("{LOCATION}", program.GetAddressByCode(puls.ToList(), x.Location));
@@ -195,9 +212,25 @@ class Program
             program.HeaderFindAndReplace("{FIRSTBUSCOUNT}", startBuses);
             program.HeaderFindAndReplace("{MIDBUSCOUNT}", midBuses);
 
-            program.SaveAs($"{currentLocation}_{currentDay.Replace("/", "")}");
-            //program.SaveAsPDF($"{currentLocation}");
+            var filename2 = $"{currentLocation}_{currentDay.Replace("/", "")}";
+            program.SaveAs(filename2);
+            program.SaveAsPDF(filename2);
             program.CloseDocument();
+
+            var emailThese = slots.Where(x => x.Location.Contains(currentLocation) && x.StartDate.Equals(currentDay) && x.Usage.Equals("AT_Pick")).ToList();
+
+            if(!emailThese.Any())
+            {
+                program.SendEmail("atividades.lisbon2019@gmail.com", "At@Jw2019", "goncalomadeiraneto@gmail.com", "Fail to send Assignment", $"Não foi possível encontrar assignments para a localização e dia: {currentLocation} / {currentDay}", $"{filename2}.pdf");
+            }
+
+            emailThese.ForEach(x =>
+             {
+                 program.SendEmail("atividades.lisbon2019@gmail.com", "At@Jw2019", x.Email, $"Relatório Diário de Pickup {currentDay}", program.GetEmailBody(currentDay), $"{filename2}.pdf");
+             });
+
+            program.DeleteFile(filename2+".pdf");
+            program.DeleteFile(filename2+".docx");
         }
 
         //for (int i = 0; i < nomes.Count; i++)
@@ -246,8 +279,9 @@ class Program
         }
 
         Volunteer v = volunteers.FirstOrDefault(x => x.Email.Equals(slot.Email));
-        string name = $"{System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(slot.VolunteerName)} {System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(slot.VolunteerSurname)}";
-        return $"{name} ({v.Mobile})";
+        string name = $"{System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(slot.FirstName)} {System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(slot.LastName)}";
+        var mobile = v == null ? "N/A" : v.Mobile;
+        return $"{name} ({mobile})";
     }
 
     public string GetNameByCode(List<PUL> puls, string code)
@@ -339,11 +373,13 @@ class Program
     //        "</tbody>" +
     //        "</table>";
 
-    public string GetEmailBody() => "<body style=\"background-color: lightblue;\"><h1 style = \"color: white;text-align: center;\" > My First CSS Example</h1><p style = \"font-family: verdana;font-size: 20px;\" > This is a paragraph.</p></body>";
+    public string GetEmailBody(string date = "N/A") => $"<body><p style = \"font-family: verdana;font-size: 12px;\" >Prezado irmãos,</p><p style = \"font-family: verdana;font-size: 12px;\" >Enviamos em anexo a sua programação para a designação PPC de dia {date} no âmbito do Congresso Interacional - Lisbon 2019. Esta informação deve ser confirmada na programação do site JW2019.org visto ser gerada automaticamente.</p><p style = \"font-family: verdana;font-size: 12px;\" >Estamos disponíveis para esclarecimentos adicionais.</p><p style = \"font-family: verdana;font-size: 12px;\" >Saudações,</p><p style = \"font-family: verdana;font-size: 12px;\" >Dept de Atividades,</p><p style = \"font-family: verdana;font-size: 12px;\" >Comissão de Hospitalidade</p></body>";
 
 
     public void SendEmail(string fromEmail, string fromPassword, string toEmail, string subject, string body, string attachment)
     {
+        MailAddress bcc = new MailAddress("goncalomadeiraneto@gmail.com");
+        
         var smtp = new SmtpClient
         {
             Host = "smtp.gmail.com",
@@ -359,6 +395,7 @@ class Program
             Body = body
         })
         {
+            message.Bcc.Add(bcc);
             message.IsBodyHtml = true;
             message.Attachments.Add(new Attachment(Path.Combine(Directory.GetCurrentDirectory(), attachment)));
             smtp.Send(message);
@@ -377,7 +414,7 @@ class Program
 
     public void DeleteFile(string filename) => File.Delete(Path.Combine(Directory.GetCurrentDirectory(), filename));
 
-    public void SaveAs(string filename) => Document.SaveAs2(Path.Combine(Directory.GetCurrentDirectory(), "saved", $"{filename}.docx"));
+    public void SaveAs(string filename) => Document.SaveAs2(Path.Combine(Directory.GetCurrentDirectory(), $"{filename}.docx"));
 
     public void SaveAsPDF(string filename) => Document.SaveAs2(Path.Combine(Directory.GetCurrentDirectory(), $"{filename}.pdf"), WdSaveFormat.wdFormatPDF);
 
