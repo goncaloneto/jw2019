@@ -1,14 +1,13 @@
-﻿using System;
+﻿using Designacoes;
+using Ganss.Excel;
+using Microsoft.Office.Interop.Excel;
+using Microsoft.Office.Interop.Word;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Mail;
-using System.Reflection;
-using Designacoes;
-using Ganss.Excel;
-using Microsoft.Office.Interop.Excel;
-using Microsoft.Office.Interop.Word;
 using static Designacoes.BusTrip;
 using Delegate = Designacoes.Delegate;
 
@@ -31,6 +30,7 @@ class Program
     List<Volunteer> Volunteers;
     List<Delegate> Delegates;
     List<BusID> BusIDs;
+    List<DropOff> DropOffs;
 
     Workbook Workbook;
     _Worksheet Worksheet;
@@ -73,6 +73,13 @@ class Program
         var activitiesDone = new List<string>();
         var datesDone = new List<string>();
 
+
+        DropOffs = new List<DropOff>();
+        Assignments.Where(x => x.Usage.Equals("AT_Drop")).ToList().ForEach(x => {
+            DropOffs.Add(new DropOff($"{ToTitleCase(x.VolunteerName)} {ToTitleCase(x.VolunteerSurname)}", TranslateActivity(x.SlotName), TranslateDay(x.SlotName)));
+        });
+
+
         // for each trip // LOOP
         foreach (BusTrip trip in Trips)
         {
@@ -109,7 +116,12 @@ class Program
                     slotsOfDay.Sort(new StartTimeComparer());
 
                     if (slotsDone.Any())
+                    {
+                        Document.Words.Last.InsertBreak(Microsoft.Office.Interop.Word.WdBreakType.wdPageBreak);
+
                         PasteTable();
+                    }
+
 
 
                     HeaderFindAndReplace("{ACTIVITYNAME}", day.ActivityName);
@@ -157,6 +169,14 @@ class Program
                     slotsDone.Add(day.SlotName);
                 }
 
+                HeaderFindAndReplace("{BUSCOUNT}", slotsDone.Count());
+
+                var docnames = String.Empty;
+
+                DropOffs.Where(x => x.ActivityName.Trim().Equals(tripOfActivity.ActivityName.Trim()) && x.Date.Equals(tripOfActivity.StartTimeDate)).ToList().ForEach(x => docnames += docnames.Contains(x.VolunteerName) ? "" : docnames.Equals(String.Empty) ? x.VolunteerName : " / " + x.VolunteerName );
+
+                HeaderFindAndReplace("{DOCNAMES}", docnames);
+
                 SaveAs($"{Guid.NewGuid()}");
                 //SaveAsPDF($"{currentLocation}");
                 CloseDocument();
@@ -175,6 +195,61 @@ class Program
         //    DeleteFile($"Test{i}.pdf");
         //    DeleteFile($"Test{i}.docx");
 
+    }
+
+    public string TranslateActivity(string a)
+    {
+        // Convention Transp.
+        if (a.Contains("BB"))
+            return "Beach barbecue";
+        if (a.Contains("EG"))
+            return "Evening Gathering";
+        if (a.Contains("FS"))
+            return "Field Service";
+        if (a.Contains("OC"))
+            return "Lisbon Oceanarium";
+        if (a.Contains("NP"))
+            return "National Palaces";
+        if (a.Contains("TM"))
+            return "Tapada de Mafra";
+        if (a.Contains("BO"))
+            return "Tagus River Trip";
+        if (a.Contains("BETHEL"))
+            return "Bethel Tour";
+
+        return "N/A";
+    }
+
+    public string TranslateDay(string a)
+    {
+        if (a.Contains("24"))
+            return "24/06/2019";
+
+        if (a.Contains("25"))
+            return "25/06/2019";
+
+        if (a.Contains("26"))
+            return "26/06/2019";
+
+        if (a.Contains("27"))
+            return "27/06/2019";
+
+        if (a.Contains("28"))
+            return "28/06/2019";
+
+        if (a.Contains("29"))
+            return "29/06/2019";
+
+        if (a.Contains("30"))
+            return "30/06/2019";
+
+        if (a.Contains("01"))
+            return "01/07/2019";
+
+        if (a.Contains("02"))
+            return "02/07/2019";
+
+        return "N/A";
     }
 
     public int CountOccurrences(string s)

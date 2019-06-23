@@ -72,6 +72,7 @@
     <Compile Include="BusID.cs" />
     <Compile Include="BusTrip.cs" />
     <Compile Include="Delegates.cs" />
+    <Compile Include="DropOff.cs" />
     <Compile Include="Hotels.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
