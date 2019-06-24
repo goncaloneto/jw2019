@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -145,7 +145,7 @@ class Program
                 var busid = busIds.FirstOrDefault(y => y.SlotName.Equals(x.SlotName));
                 program.FindAndReplace("{BUSID}", busid == null ? "N/A" : busid.BUSID);
                 program.FindAndReplace("{ACTIVITYNAME}", x.ActivityName);
-                program.FindAndReplace("{LEAVETIME}", x.StartTime.ToString("dd/MM/yyyy hh:mm"));
+                program.FindAndReplace("{LEAVETIME}", x.StartTime.ToString("dd/MM/yyyy HH:mm"));
                 program.FindAndReplace("{DELEGATES}", x.Delegates);
                 program.FindAndReplace("{ACTIVITYNAME}", x.ActivityName);
                 program.FindAndReplace("{BUSINDEX}", busIndex);
@@ -373,11 +373,12 @@ class Program
     //        "</tbody>" +
     //        "</table>";
 
-    public string GetEmailBody(string date = "N/A") => $"<body><p style = \"font-family: verdana;font-size: 12px;\" >Prezado irmãos,</p><p style = \"font-family: verdana;font-size: 12px;\" >Enviamos em anexo a sua programação para a designação PPC de dia {date} no âmbito do Congresso Interacional - Lisbon 2019. Esta informação deve ser confirmada na programação do site JW2019.org visto ser gerada automaticamente.</p><p style = \"font-family: verdana;font-size: 12px;\" >Estamos disponíveis para esclarecimentos adicionais.</p><p style = \"font-family: verdana;font-size: 12px;\" >Saudações,</p><p style = \"font-family: verdana;font-size: 12px;\" >Dept de Atividades,</p><p style = \"font-family: verdana;font-size: 12px;\" >Comissão de Hospitalidade</p></body>";
+    public string GetEmailBody(string date = "N/A") => $"<body><p style = \"font-family: verdana;font-size: 12px;\" >Prezados irmãos,</p><p style = \"font-family: verdana;font-size: 12px;\" >Enviamos em anexo a sua programação para a designação PPC de dia {date} no âmbito do Congresso Interacional - Lisbon 2019. Esta informação deve ser confirmada na programação do site JW2019.org visto ser gerada automaticamente.</p><p style = \"font-family: verdana;font-size: 12px;\" >Estamos disponíveis para esclarecimentos adicionais.</p><p style = \"font-family: verdana;font-size: 12px;\" >Saudações,</p><p style = \"font-family: verdana;font-size: 12px;\" >Dept de Atividades,</p><p style = \"font-family: verdana;font-size: 12px;\" >Comissão de Hospitalidade</p></body>";
 
 
     public void SendEmail(string fromEmail, string fromPassword, string toEmail, string subject, string body, string attachment)
     {
+        //toEmail = "goncalomadeira.oliveira@gmail.com";
         MailAddress bcc = new MailAddress("goncalomadeiraneto@gmail.com");
         
         var smtp = new SmtpClient
