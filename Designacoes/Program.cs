@@ -200,6 +200,9 @@ class Program
             }
 
 
+            FindAndReplace("{OBS}", "Enviamos os nomes de irmãos para proferirem as orações antes de almoço. Caso o irmão assinalado com (1) não possa/aceite, convide o irmão assinalado com (2).\v");
+
+
             // Delegates per slot
             var delegatesOnSlot = Delegates.Where(x => x.SlotName.Equals(currentSlot)).ToList();
             // Sort by hotel
@@ -226,6 +229,12 @@ class Program
             SaveAs($"{currentSlot}");
             SaveAsPDF($"{currentSlot}");
             CloseDocument();
+
+            //email
+            //assignmentsOfSlot.First().Email;
+
+            DeleteFile($"{currentSlot}.pdf");
+            DeleteFile($"{currentSlot}.docx");
         }
 
 
