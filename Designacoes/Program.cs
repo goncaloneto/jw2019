@@ -145,10 +145,15 @@ class Program
                     var busid = b == null ? "N/A" : b.BUSID;
                     FindAndReplace("{BUSID}", busid);
 
+                    if(busid.Equals("N/A"))
+                    {
+                        Console.WriteLine(day.SlotName + " has no BUSID" );
+                    }
+
 
 
                     var tl = Assignments.FirstOrDefault(x => x.SlotName.Equals(day.SlotName) && x.Usage.Equals("AT_TL"));
-                    var name = tl == null ? "N/A" : $"{tl.FirstName} {tl.LastName}";
+                    var name = tl == null ? "N/A" : $"{ToTitleCase(tl.FirstName)} {ToTitleCase(tl.LastName)}";
                     string mobile;
                     try
                     {
@@ -161,7 +166,7 @@ class Program
                     }
 
                     var bc = Assignments.FirstOrDefault(x => x.SlotName.Equals(day.SlotName) && x.Usage.Equals("TR_BC"));
-                    name = bc == null ? "N/A" : $"{bc.FirstName} {bc.LastName}";
+                    name = bc == null ? "N/A" : $"{ToTitleCase(bc.FirstName)} {ToTitleCase(bc.LastName)}";
                     try
                     {
                         mobile = bc == null ? "N/A" : Volunteers.FirstOrDefault(x => x.Email.Equals(bc.Email)).Mobile;
@@ -192,7 +197,7 @@ class Program
                     string replace = String.Empty;
                     delegatesOnSlot.ForEach(x =>
                     {
-                        replace = $"{GetNameByCode(x.HotelName)} - {x.FirstName} {x.LastName} ({x.Language})\v{{DELEGATESLIST}}";
+                        replace = $"{GetNameByCode(x.HotelName)} - {ToTitleCase(x.FirstName)} {ToTitleCase(x.LastName)} ({x.Language})\v{{DELEGATESLIST}}";
                         FindAndReplace("{DELEGATESLIST}", replace);
                     });
                     FindAndReplace("{DELEGATESLIST}", "");
@@ -208,19 +213,19 @@ class Program
 
                 HeaderFindAndReplace("{DOCNAMES}", docnames);
 
+                SaveAsPDF("DOC_Report");
+                SaveAs("a");
+
                 DropOffs.Where(x => x.ActivityName.Trim().Equals(tripOfActivity.ActivityName.Trim()) && x.Date.Equals(tripOfActivity.StartTimeDate)).ToList().ForEach(x =>
                 {
-                    SaveAs($"DOC_Report");
-                    SaveAsPDF("DOC_Report");
-
                     SendEmail("atividades.lisbon2019@gmail.com", "At@Jw2019", x.Email, $"Relatório Diário de Drop-Off {date}", GetEmailBody(date), $"DOC_Report.pdf");
 
-                    DeleteFile("DOC_Report.pdf");
-                    DeleteFile("DOC_Report.docx");
-
-                    CloseDocument();
                 });
-                
+
+                CloseDocument();
+
+                DeleteFile("DOC_Report.pdf");
+                DeleteFile("a.docx");
 
                 datesDone.Add(tripOfActivity.StartTimeDate);
 
@@ -236,6 +241,7 @@ class Program
         //    DeleteFile($"Test{i}.pdf");
         //    DeleteFile($"Test{i}.docx");
 
+        Console.WriteLine("DONT CLOSE MEEEEE");
     }
 
     public string TranslateActivity(string a)
@@ -432,7 +438,7 @@ class Program
 
     public void SendEmail(string fromEmail, string fromPassword, string toEmail, string subject, string body, string attachment)
     {
-        toEmail = "goncalomadeira.oliveira@gmail.com";
+        //toEmail = "goncalomadeira.oliveira@gmail.com";
         MailAddress bcc = new MailAddress("goncalomadeiraneto@gmail.com");
 
         var smtp = new SmtpClient
