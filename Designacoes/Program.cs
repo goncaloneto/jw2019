@@ -68,7 +68,7 @@ class Program
         Volunteers = new ExcelMapper("Volunteers.xlsx").Fetch<Volunteer>().ToList();
         Delegates = new ExcelMapper("Delegates.xlsx").Fetch<Delegate>().ToList();
         BusIDs = new ExcelMapper("BUSID.xlsx").Fetch<BusID>().ToList();
-        Prayers = new ExcelMapper("Prayer.xlsx").Fetch<Prayer>().ToList();
+        Prayers = new ExcelMapper("Prayers.xlsx").Fetch<Prayer>().ToList();
 
         TLs = Assignments.Where(x => x.Usage.Equals("AT_TL")).ToList();
         var slotsDone = new List<string>();
