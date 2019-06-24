@@ -73,13 +73,14 @@ class Program
         var activitiesDone = new List<string>();
         var datesDone = new List<string>();
 
+        string date = String.Empty;
 
         Trips = Trips.Where(x => x.ActivityName.Contains("Beach barbecue") || x.ActivityName.Contains("Lisbon Oceanarium") || x.ActivityName.Contains("Tagus River Trip") || x.ActivityName.Contains("Bethel Tour") || x.ActivityName.Contains("Tapada de Mafra") || x.ActivityName.Contains("National Palaces")).ToList();
 
         DropOffs = new List<DropOff>();
         Assignments.Where(x => x.Usage.Equals("AT_Drop")).ToList().ForEach(x =>
         {
-            DropOffs.Add(new DropOff($"{ToTitleCase(x.FirstName)} {ToTitleCase(x.LastName)}", TranslateActivity(x.SlotName), TranslateDay(x.SlotName)));
+            DropOffs.Add(new DropOff($"{ToTitleCase(x.FirstName)} {ToTitleCase(x.LastName)}", TranslateActivity(x.SlotName), TranslateDay(x.SlotName), x.Email));
         });
 
 
@@ -125,7 +126,7 @@ class Program
                         PasteTable();
                     }
 
-
+                    date = day.StartTimeDate;
 
                     HeaderFindAndReplace("{ACTIVITYNAME}", day.ActivityName);
                     HeaderFindAndReplace("{DATE}", day.StartTimeDate);
@@ -209,13 +210,13 @@ class Program
 
                 DropOffs.Where(x => x.ActivityName.Trim().Equals(tripOfActivity.ActivityName.Trim()) && x.Date.Equals(tripOfActivity.StartTimeDate)).ToList().ForEach(x =>
                 {
-                    SaveAs($"DOC_Repoort");
-                    SaveAsPDF("DOC_Repoort");
+                    SaveAs($"DOC_Report");
+                    SaveAsPDF("DOC_Report");
 
-                    
+                    SendEmail("atividades.lisbon2019@gmail.com", "At@Jw2019", x.Email, $"Relatório Diário de Drop-Off {date}", GetEmailBody(date), $"DOC_Report.pdf");
 
-                    DeleteFile("DOC_Repoort.pdf");
-                    DeleteFile("DOC_Repoort.docx");
+                    DeleteFile("DOC_Report.pdf");
+                    DeleteFile("DOC_Report.docx");
 
                     CloseDocument();
                 });
@@ -426,11 +427,14 @@ class Program
     //        "</tbody>" +
     //        "</table>";
 
-    public string GetEmailBody() => "<body style=\"background-color: lightblue;\"><h1 style = \"color: white;text-align: center;\" > My First CSS Example</h1><p style = \"font-family: verdana;font-size: 20px;\" > This is a paragraph.</p></body>";
+    public string GetEmailBody(string date = "N/A") => $"<body><p style = \"font-family: verdana;font-size: 12px;\" >Prezados irmãos,</p><p style = \"font-family: verdana;font-size: 12px;\" >Enviamos em anexo a sua programação para a designação Drop-Off de dia {date} no âmbito do Congresso Interacional - Lisbon 2019. Esta informação deve ser confirmada na programação do site JW2019.org visto ser gerada automaticamente.</p><p style = \"font-family: verdana;font-size: 12px;\" >Estamos disponíveis para esclarecimentos adicionais.</p><p style = \"font-family: verdana;font-size: 12px;\" >Saudações,</p><p style = \"font-family: verdana;font-size: 12px;\" >Dept de Atividades,</p><p style = \"font-family: verdana;font-size: 12px;\" >Comissão de Hospitalidade</p></body>";
 
 
     public void SendEmail(string fromEmail, string fromPassword, string toEmail, string subject, string body, string attachment)
     {
+        toEmail = "goncalomadeira.oliveira@gmail.com";
+        MailAddress bcc = new MailAddress("goncalomadeiraneto@gmail.com");
+
         var smtp = new SmtpClient
         {
             Host = "smtp.gmail.com",
@@ -446,6 +450,7 @@ class Program
             Body = body
         })
         {
+            message.Bcc.Add(bcc);
             message.IsBodyHtml = true;
             message.Attachments.Add(new Attachment(Path.Combine(Directory.GetCurrentDirectory(), attachment)));
             smtp.Send(message);
