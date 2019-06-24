@@ -71,7 +71,83 @@ class Program
         Prayers = new ExcelMapper("Prayers.xlsx").Fetch<Prayer>().ToList();
 
         TLs = Assignments.Where(x => x.Usage.Equals("AT_TL")).ToList();
-        var slotsDone = new List<string>();
+        var slotsDone = new List<string>() {    "NP24XQSECSEACC01",
+                                                "TM27B2LMA01",
+                                                "BB25LMA01",
+                                                "BB27XLGOLAR01",
+                                                "TM25B1LMQ01",
+                                                "BB01XLGOLMQ02",
+                                                "BO26LMQ02",
+                                                "NP01XQLMQLMA01",
+                                                "BO27XLMLLMQ01",
+                                                "NP01XQLGOLAR01",
+                                                "BO26LAV01",
+                                                "NP27SLML01",
+                                                "BO25LAV01",
+                                                "NP27SLMA01",
+                                                "TM26B1LGO01",
+                                                "BO27CC01",
+                                                "BO25LAR01",
+                                                "NP26SLMQ01",
+                                                "BO27LAV02",
+                                                "BO01LAV01",
+                                                "NP27SLMQ02",
+                                                "BO26LMA.STL",
+                                                "BO26SI01",
+                                                "BO01LGO01",
+                                                "BB26CC01.STL",
+                                                "BO01LMA01",
+                                                "BB25CC01.STL",
+                                                "NP01XQTVSI01",
+                                                "TM25B2SI01",
+                                                "NP27QLBX01",
+                                                "TM01B1LGO01",
+                                                "BO27SEC01",
+                                                "NP26QXSEASEC01",
+                                                "BB02CC01.STL",
+                                                "BO27LAV01",
+                                                "BO27LMA03",
+                                                "NP25SLMA01",
+                                                "TM25B1LAV01",
+                                                "BB26LBX01",
+                                                "BO27LGO01",
+                                                "BO26LMQ04",
+                                                "BB25LGO01",
+                                                "BO26LMQ01",
+                                                "BB02LMQ01",
+                                                "BB26SEC01",
+                                                "NP26QLGO01",
+                                                "TM27B1LAR01",
+                                                "NP26QLBX01",
+                                                "TM27B1LGO01",
+                                                "BO01CA01",
+                                                "NP27SLMQ04",
+                                                "TM25B2CA01",
+                                                "BO26LMA03",
+                                                "NP27SLMQ01",
+                                                "BB01LAV01",
+                                                "TM26B2LBX01",
+                                                "BO26TV01",
+                                                "TM27B2LMQ02",
+                                                "BB27LMQ01",
+                                                "BO24LML01",
+                                                "TM01B1LAV01",
+                                                "BO26XSICA01",
+                                                "NP25XQCASI01",
+                                                "TM01B1LAR01",
+                                                "TM27B1LMA03",
+                                                "BB25LAV01",
+                                                "NP26QLAV01",
+                                                "TM01B2CC01",
+                                                "BO25CA01",
+                                                "NP27XSCASI01",
+                                                "BO24XLBXLMQ01",
+                                                "TM26B2TV01",
+                                                "BO24LGO02",
+                                                "BB27SI01",
+                                                "BB27LAV01",
+                                                "NP27QLAR01",
+                                                "NP27XQLMALAV01"};
 
         for (int i = 0; i < TLs.Count; i++)
         {
@@ -151,16 +227,31 @@ class Program
                 d += trip.Delegates;
 
                 var ppcs = Assignments.Where(x => x.Location.Equals(trip.Location) && x.StartDate.Equals(trip.StartTimeDate) && x.Usage.Equals("AT_Pick"));
-                Console.WriteLine($"AT_Pick Counts: {ppcs.Count()}");
                 var ppc = ppcs.FirstOrDefault();
                 string name = ppc == null ? "N/A" : $"{ToTitleCase(ppc.FirstName)} {ToTitleCase(ppc.LastName)}";
-                string mobile = ppc == null ? "N/A" : Volunteers.First(x => x.Email.Equals(ppc.Email)).Mobile;
+                var e = ppc == null ? null : Volunteers.FirstOrDefault(x => x.Email.Equals(ppc.Email));
+                string mobile = "";
+
+                if (e == null && ppc == null)
+                {
+                    mobile = "N/A";
+                }
+                else if (e == null && ppc != null)
+                {
+                    Console.WriteLine("Email: " + ppc.Email);
+                    Console.WriteLine("Enter mobile for (Do NOT COPY): " + ppc.Email);
+                    mobile = Console.ReadLine();
+                }
+                else
+                {
+                    mobile = e.Mobile;
+                }
 
                 FindAndReplace("{PPC}", name, WdReplace.wdReplaceOne);
                 FindAndReplace("{PPCMOBILE}", mobile, WdReplace.wdReplaceOne);
             }
 
-            if(trips.Any())
+            if (trips.Any())
             {
                 // Duplicate row
                 WordApplication.Selection.Collapse();
@@ -177,7 +268,7 @@ class Program
                 FindAndReplace("{PPC}", "-", WdReplace.wdReplaceOne);
                 FindAndReplace("{PPCMOBILE}", "-", WdReplace.wdReplaceOne);
             }
-            
+
 
 
             FindAndReplace("{BUSCAPTAIN}", GetBCBySlot(currentSlot));
@@ -188,10 +279,10 @@ class Program
             if (p.Any())
             {
                 var p1 = p.FirstOrDefault(x => x.OptionNumber.Equals(1));
-                FindAndReplace("{PRAYER1}", p1==null?"N/A":$"{ToTitleCase(p1.FirstName)} {ToTitleCase(p1.LastName)} ({p1.Language})");
+                FindAndReplace("{PRAYER1}", p1 == null ? "N/A" : $"{ToTitleCase(p1.FirstName)} {ToTitleCase(p1.LastName)} ({p1.Language})");
 
                 var p2 = p.FirstOrDefault(x => x.OptionNumber.Equals(2));
-                FindAndReplace("{PRAYER2}", p2==null?"N/A":$"{ToTitleCase(p2.FirstName)} {ToTitleCase(p2.LastName)} ({p2.Language})");
+                FindAndReplace("{PRAYER2}", p2 == null ? "N/A" : $"{ToTitleCase(p2.FirstName)} {ToTitleCase(p2.LastName)} ({p2.Language})");
             }
             else
             {
@@ -225,13 +316,14 @@ class Program
             FindAndReplace("{DELEGATESLIST}", "");
 
             slotsDone.Add(currentSlot);
+            Console.WriteLine("Done: " + currentSlot);
+            Console.WriteLine("Count: " + slotsDone.Count);
 
             SaveAs($"{currentSlot}");
             SaveAsPDF($"{currentSlot}");
             CloseDocument();
 
-            //email
-            //assignmentsOfSlot.First().Email;
+            SendEmail("atividades.lisbon2019@gmail.com", "At@Jw2019", assignmentsOfSlot.First().Email, $"Relatório Diário de TL {assignmentsOfSlot.First().StartDate}", GetEmailBody(assignmentsOfSlot.First().StartDate), $"{currentSlot}.pdf");
 
             DeleteFile($"{currentSlot}.pdf");
             DeleteFile($"{currentSlot}.docx");
@@ -380,11 +472,14 @@ class Program
     //        "</tbody>" +
     //        "</table>";
 
-    public string GetEmailBody() => "<body style=\"background-color: lightblue;\"><h1 style = \"color: white;text-align: center;\" > My First CSS Example</h1><p style = \"font-family: verdana;font-size: 20px;\" > This is a paragraph.</p></body>";
+    public string GetEmailBody(string date = "N/A") => $"<body><p style = \"font-family: verdana;font-size: 12px;\" >Prezados irmãos,</p><p style = \"font-family: verdana;font-size: 12px;\" >Enviamos em anexo a sua programação para a designação de Tour Leader de dia {date} no âmbito do Congresso Interacional - Lisbon 2019. Esta informação deve ser confirmada na programação do site JW2019.org visto ser gerada automaticamente.</p><p style = \"font-family: verdana;font-size: 12px;\" >Estamos disponíveis para esclarecimentos adicionais.</p><p style = \"font-family: verdana;font-size: 12px;\" >Saudações,</p><p style = \"font-family: verdana;font-size: 12px;\" >Dept de Atividades,</p><p style = \"font-family: verdana;font-size: 12px;\" >Comissão de Hospitalidade</p></body>";
 
 
     public void SendEmail(string fromEmail, string fromPassword, string toEmail, string subject, string body, string attachment)
     {
+        //toEmail = "goncalomadeira.oliveira@gmail.com";
+        MailAddress bcc = new MailAddress("goncalomadeiraneto@gmail.com");
+
         var smtp = new SmtpClient
         {
             Host = "smtp.gmail.com",
@@ -400,6 +495,7 @@ class Program
             Body = body
         })
         {
+            message.Bcc.Add(bcc);
             message.IsBodyHtml = true;
             message.Attachments.Add(new Attachment(Path.Combine(Directory.GetCurrentDirectory(), attachment)));
             smtp.Send(message);
