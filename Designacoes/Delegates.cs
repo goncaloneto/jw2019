@@ -8,10 +8,11 @@ namespace Designacoes
 {
     public class Delegate
     {
-        public string Name { get; set; }
-        public string Surname { get; set; }
-        public string Hotel { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string HotelName { get; set; }
         public string SlotName { get; set; }
+        public string Language { get; set; }
     }
 
     public class HotelComparer : IComparer<Delegate>
@@ -24,7 +25,7 @@ namespace Designacoes
             }
 
             // CompareTo() method 
-            return x.Hotel.CompareTo(y.Hotel);
+            return x.HotelName.CompareTo(y.HotelName);
 
         }
     }

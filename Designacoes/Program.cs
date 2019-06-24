@@ -74,9 +74,12 @@ class Program
         var datesDone = new List<string>();
 
 
+        Trips = Trips.Where(x => x.ActivityName.Contains("Beach barbecue") || x.ActivityName.Contains("Lisbon Oceanarium") || x.ActivityName.Contains("Tagus River Trip") || x.ActivityName.Contains("Bethel Tour") || x.ActivityName.Contains("Tapada de Mafra") || x.ActivityName.Contains("National Palaces")).ToList();
+
         DropOffs = new List<DropOff>();
-        Assignments.Where(x => x.Usage.Equals("AT_Drop")).ToList().ForEach(x => {
-            DropOffs.Add(new DropOff($"{ToTitleCase(x.VolunteerName)} {ToTitleCase(x.VolunteerSurname)}", TranslateActivity(x.SlotName), TranslateDay(x.SlotName)));
+        Assignments.Where(x => x.Usage.Equals("AT_Drop")).ToList().ForEach(x =>
+        {
+            DropOffs.Add(new DropOff($"{ToTitleCase(x.FirstName)} {ToTitleCase(x.LastName)}", TranslateActivity(x.SlotName), TranslateDay(x.SlotName)));
         });
 
 
@@ -141,15 +144,42 @@ class Program
                     var busid = b == null ? "N/A" : b.BUSID;
                     FindAndReplace("{BUSID}", busid);
 
+
+
                     var tl = Assignments.FirstOrDefault(x => x.SlotName.Equals(day.SlotName) && x.Usage.Equals("AT_TL"));
-                    var name = tl == null ? "N/A" : $"{tl.VolunteerName} {tl.VolunteerSurname}";
-                    var mobile = tl == null ? "N/A" : Volunteers.FirstOrDefault(x => x.Email.Equals(tl.Email)).Mobile;
-                    FindAndReplace("{TOURLEADER}", $"{name} ({mobile})");
+                    var name = tl == null ? "N/A" : $"{tl.FirstName} {tl.LastName}";
+                    string mobile;
+                    try
+                    {
+                        mobile = tl == null ? "N/A" : Volunteers.FirstOrDefault(x => x.Email.Equals(tl.Email)).Mobile;
+                        FindAndReplace("{TOURLEADER}", $"{name} ({mobile})");
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine($"TL Email: {tl.Email}");
+                    }
 
                     var bc = Assignments.FirstOrDefault(x => x.SlotName.Equals(day.SlotName) && x.Usage.Equals("TR_BC"));
-                    name = bc == null ? "N/A" : $"{bc.VolunteerName} {bc.VolunteerSurname}";
-                    mobile = bc == null ? "N/A" : Volunteers.FirstOrDefault(x => x.Email.Equals(bc.Email)).Mobile;
-                    FindAndReplace("{BUSCAPTAIN}", $"{name} ({mobile})");
+                    name = bc == null ? "N/A" : $"{bc.FirstName} {bc.LastName}";
+                    try
+                    {
+                        mobile = bc == null ? "N/A" : Volunteers.FirstOrDefault(x => x.Email.Equals(bc.Email)).Mobile;
+                        FindAndReplace("{BUSCAPTAIN}", $"{name} ({mobile})");
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine($"TL Email: {bc.Email}");
+                    }
+
+                    if (tl == null)
+                    {
+                        Console.WriteLine(day.ActivityName + " " + day.StartTimeDate + " " + "NO TL");
+                    }
+
+                    if (bc == null)
+                    {
+                        Console.WriteLine(day.ActivityName + " " + day.StartTimeDate + " " + "NO BC");
+                    }
 
 
                     // Delegates per slot
@@ -161,7 +191,7 @@ class Program
                     string replace = String.Empty;
                     delegatesOnSlot.ForEach(x =>
                     {
-                        replace = $"{GetNameByCode(x.Hotel)} - {x.Name} {x.Surname}\v{{DELEGATESLIST}}";
+                        replace = $"{GetNameByCode(x.HotelName)} - {x.FirstName} {x.LastName} ({x.Language})\v{{DELEGATESLIST}}";
                         FindAndReplace("{DELEGATESLIST}", replace);
                     });
                     FindAndReplace("{DELEGATESLIST}", "");
@@ -173,13 +203,17 @@ class Program
 
                 var docnames = String.Empty;
 
-                DropOffs.Where(x => x.ActivityName.Trim().Equals(tripOfActivity.ActivityName.Trim()) && x.Date.Equals(tripOfActivity.StartTimeDate)).ToList().ForEach(x => docnames += docnames.Contains(x.VolunteerName) ? "" : docnames.Equals(String.Empty) ? x.VolunteerName : " / " + x.VolunteerName );
+                DropOffs.Where(x => x.ActivityName.Trim().Equals(tripOfActivity.ActivityName.Trim()) && x.Date.Equals(tripOfActivity.StartTimeDate)).ToList().ForEach(x => docnames += docnames.Contains(x.VolunteerName) ? "" : docnames.Equals(String.Empty) ? x.VolunteerName : " / " + x.VolunteerName);
 
                 HeaderFindAndReplace("{DOCNAMES}", docnames);
 
-                SaveAs($"{Guid.NewGuid()}");
-                //SaveAsPDF($"{currentLocation}");
-                CloseDocument();
+                DropOffs.Where(x => x.ActivityName.Trim().Equals(tripOfActivity.ActivityName.Trim()) && x.Date.Equals(tripOfActivity.StartTimeDate)).ToList().ForEach(x =>
+                {
+                    SaveAs($"{DOC_Repoort}");
+                    //SaveAsPDF($"{currentLocation}");
+                    CloseDocument();
+                });
+                
 
                 datesDone.Add(tripOfActivity.StartTimeDate);
 
@@ -291,7 +325,7 @@ class Program
         }
 
         Volunteer v = Volunteers.FirstOrDefault(x => x.Email.Equals(assignment.Email));
-        string name = $"{System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(assignment.VolunteerName)} {System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(assignment.VolunteerSurname)}";
+        string name = $"{System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(assignment.FirstName)} {System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(assignment.LastName)}";
         return $"{name} ({v.Mobile})";
     }
 
@@ -424,7 +458,7 @@ class Program
 
     public void DeleteFile(string filename) => File.Delete(Path.Combine(Directory.GetCurrentDirectory(), filename));
 
-    public void SaveAs(string filename) => Document.SaveAs2(Path.Combine(Directory.GetCurrentDirectory(), "saved", $"{filename}.docx"));
+    public void SaveAs(string filename) => Document.SaveAs2(Path.Combine(Directory.GetCurrentDirectory(), $"{filename}.docx"));
 
     public void SaveAsPDF(string filename) => Document.SaveAs2(Path.Combine(Directory.GetCurrentDirectory(), $"{filename}.pdf"), WdSaveFormat.wdFormatPDF);
 
