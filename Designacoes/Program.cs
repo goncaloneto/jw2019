@@ -31,6 +31,7 @@ class Program
     List<Volunteer> Volunteers;
     List<Delegate> Delegates;
     List<BusID> BusIDs;
+    List<Prayer> Prayers;
 
     Workbook Workbook;
     _Worksheet Worksheet;
@@ -67,6 +68,7 @@ class Program
         Volunteers = new ExcelMapper("Volunteers.xlsx").Fetch<Volunteer>().ToList();
         Delegates = new ExcelMapper("Delegates.xlsx").Fetch<Delegate>().ToList();
         BusIDs = new ExcelMapper("BUSID.xlsx").Fetch<BusID>().ToList();
+        Prayers = new ExcelMapper("Prayer.xlsx").Fetch<Prayer>().ToList();
 
         TLs = Assignments.Where(x => x.Usage.Equals("AT_TL")).ToList();
         var slotsDone = new List<string>();
@@ -95,10 +97,15 @@ class Program
                 continue;
 
             var activityName = a.ActivityName;
-            var tlName = $"{ToTitleCase(assignmentsOfSlot.First().VolunteerName)} {ToTitleCase(assignmentsOfSlot.First().VolunteerSurname)}";
+            var tlName = $"{ToTitleCase(assignmentsOfSlot.First().FirstName)} {ToTitleCase(assignmentsOfSlot.First().LastName)}";
 
             var b = BusIDs.FirstOrDefault(x => x.SlotName.Equals(currentSlot));
             var busid = b == null ? "N/A" : b.BUSID;
+
+            if (b == null)
+            {
+                Console.WriteLine($"No BUS ID for: {currentSlot}");
+            }
 
             //Header
             HeaderFindAndReplace("{ACTIVITYNAME}", activityName);
@@ -123,6 +130,8 @@ class Program
             var trips = Trips.Where(x => x.SlotName.Equals(currentSlot)).ToList();
             trips.Sort(new StartTimeComparer());
 
+            int d = 0;
+
             foreach (BusTrip trip in trips)
             {
                 // Duplicate row
@@ -139,17 +148,57 @@ class Program
                 FindAndReplace("{DEPARTURE}", trip.StartTimeTime, WdReplace.wdReplaceOne);
                 FindAndReplace("{NDEL}", trip.Delegates, WdReplace.wdReplaceOne);
 
+                d += trip.Delegates;
+
                 var ppcs = Assignments.Where(x => x.Location.Equals(trip.Location) && x.StartDate.Equals(trip.StartTimeDate) && x.Usage.Equals("AT_Pick"));
                 Console.WriteLine($"AT_Pick Counts: {ppcs.Count()}");
                 var ppc = ppcs.FirstOrDefault();
-                string name = ppc == null ? "N/A" : $"{ToTitleCase(ppc.VolunteerName)} {ToTitleCase(ppc.VolunteerSurname)}";
+                string name = ppc == null ? "N/A" : $"{ToTitleCase(ppc.FirstName)} {ToTitleCase(ppc.LastName)}";
                 string mobile = ppc == null ? "N/A" : Volunteers.First(x => x.Email.Equals(ppc.Email)).Mobile;
 
                 FindAndReplace("{PPC}", name, WdReplace.wdReplaceOne);
                 FindAndReplace("{PPCMOBILE}", mobile, WdReplace.wdReplaceOne);
             }
 
+            if(trips.Any())
+            {
+                // Duplicate row
+                WordApplication.Selection.Collapse();
+                WordApplication.Selection.Find.Execute("{LOCATION}");
+                WordApplication.Selection.Rows[1].Range.Copy();
+                WordApplication.Selection.Rows[1].Select();
+                WordApplication.Selection.Range.Paste();
+                WordApplication.Selection.Collapse();
+
+                FindAndReplace("{LOCATION}", trips.First().ActivityName, WdReplace.wdReplaceOne);
+                FindAndReplace("{ARRIVAL}", "-", WdReplace.wdReplaceOne);
+                FindAndReplace("{DEPARTURE}", trips.First().ReturnTimeTime, WdReplace.wdReplaceOne);
+                FindAndReplace("{NDEL}", d, WdReplace.wdReplaceOne);
+                FindAndReplace("{PPC}", "-", WdReplace.wdReplaceOne);
+                FindAndReplace("{PPCMOBILE}", "-", WdReplace.wdReplaceOne);
+            }
+            
+
+
             FindAndReplace("{BUSCAPTAIN}", GetBCBySlot(currentSlot));
+
+            // Prayer
+            var p = Prayers.Where(x => x.SlotName.Equals(currentSlot)).ToList();
+
+            if (p.Any())
+            {
+                var p1 = p.FirstOrDefault(x => x.OptionNumber.Equals(1));
+                FindAndReplace("{PRAYER1}", p1==null?"N/A":$"{ToTitleCase(p1.FirstName)} {ToTitleCase(p1.LastName)} ({p1.Language})");
+
+                var p2 = p.FirstOrDefault(x => x.OptionNumber.Equals(2));
+                FindAndReplace("{PRAYER2}", p2==null?"N/A":$"{ToTitleCase(p2.FirstName)} {ToTitleCase(p2.LastName)} ({p2.Language})");
+            }
+            else
+            {
+                FindAndReplace("{PRAYER1}", "N/A");
+                FindAndReplace("{PRAYER2}", "N/A");
+            }
+
 
             // Delegates per slot
             var delegatesOnSlot = Delegates.Where(x => x.SlotName.Equals(currentSlot)).ToList();
@@ -160,7 +209,7 @@ class Program
             string replace = String.Empty;
             delegatesOnSlot.ForEach(x =>
             {
-                replace = $"{GetNameByCode(x.Hotel)} - {x.Name} {x.Surname}\v{{DELEGATESLIST}}";
+                replace = $"{GetNameByCode(x.HotelName)} - {x.FirstName} {x.LastName} ({x.Language})\v{{DELEGATESLIST}}";
                 FindAndReplace("{DELEGATESLIST}", replace);
             });
 
@@ -174,8 +223,8 @@ class Program
 
             slotsDone.Add(currentSlot);
 
-            SaveAs($"{tlName.Replace(" ", "")}_{currentSlot}");
-            //SaveAsPDF($"{currentLocation}");
+            SaveAs($"{currentSlot}");
+            SaveAsPDF($"{currentSlot}");
             CloseDocument();
         }
 
@@ -211,11 +260,13 @@ class Program
 
         if (assignment == null && usage.Equals("TR_BC"))
         {
+            Console.WriteLine($"No BC for {slotName}");
             return "N/A";
         }
 
         if (assignment == null)
         {
+            Console.WriteLine($"No TL for {slotName}");
             return "Não há Tour Leader";
         }
 
@@ -225,7 +276,7 @@ class Program
         }
 
         Volunteer v = Volunteers.FirstOrDefault(x => x.Email.Equals(assignment.Email));
-        string name = $"{System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(assignment.VolunteerName)} {System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(assignment.VolunteerSurname)}";
+        string name = $"{System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(assignment.FirstName)} {System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(assignment.LastName)}";
         return $"{name} ({v.Mobile})";
     }
 
@@ -358,7 +409,7 @@ class Program
 
     public void DeleteFile(string filename) => File.Delete(Path.Combine(Directory.GetCurrentDirectory(), filename));
 
-    public void SaveAs(string filename) => Document.SaveAs2(Path.Combine(Directory.GetCurrentDirectory(), "saved", $"{filename}.docx"));
+    public void SaveAs(string filename) => Document.SaveAs2(Path.Combine(Directory.GetCurrentDirectory(), $"{filename}.docx"));
 
     public void SaveAsPDF(string filename) => Document.SaveAs2(Path.Combine(Directory.GetCurrentDirectory(), $"{filename}.pdf"), WdSaveFormat.wdFormatPDF);
 

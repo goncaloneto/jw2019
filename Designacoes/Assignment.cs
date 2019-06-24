@@ -9,8 +9,8 @@ namespace Designacoes
     public class Assignment
     {
         public string SlotName { get; set; }
-        public string VolunteerName { get; set; }
-        public string VolunteerSurname { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
         public string Email { get; set; }
         public string Usage { get; set; }
         public DateTime Start { get; set; }
