@@ -209,8 +209,14 @@ class Program
 
                 DropOffs.Where(x => x.ActivityName.Trim().Equals(tripOfActivity.ActivityName.Trim()) && x.Date.Equals(tripOfActivity.StartTimeDate)).ToList().ForEach(x =>
                 {
-                    SaveAs($"{DOC_Repoort}");
-                    //SaveAsPDF($"{currentLocation}");
+                    SaveAs($"DOC_Repoort");
+                    SaveAsPDF("DOC_Repoort");
+
+                    
+
+                    DeleteFile("DOC_Repoort.pdf");
+                    DeleteFile("DOC_Repoort.docx");
+
                     CloseDocument();
                 });
                 
