@@ -18,7 +18,7 @@ namespace Designacoes
         public DateTime End { get; set; }
         public string Location { get; set; }
 
-        public string StartTime => Start.ToString("hh:mm").Replace(":","h");
+        public string StartTime => Start.ToString("HH:mm").Replace(":","h");
         public string StartDate => Start.ToString("dd/MM/yyyy");
     }
 
